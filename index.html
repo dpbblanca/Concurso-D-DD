@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QuizLive — Trivia Interactiva</title>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" defer></script>
+
 <style>
   :root {
     --bg: #0d0d1a; --surface: #1a1a2e; --surface2: #16213e;
@@ -286,8 +285,10 @@
   <p style="color:var(--text2);font-size:15px;margin-top:8px;">¡Gracias por participar!</p>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-window.addEventListener('load', function() {
+const FIREBASE_URL = "https://mi-trivia-31119-default-rtdb.firebaseio.com";
 
 const QUESTIONS = [
   { id:1, bloque:"🎬 Bloque 1", tema:"Cultura", text:"¿Cuál es el animal más grande que ha existido en la Tierra?", type:"multiple", options:["Diplodocus","Tiburón blanco","Ballena azul","Elefante africano"], correct:2, time:20 },
@@ -326,7 +327,6 @@ let playerTimerInterval = null;
 let db = null;
 let gameRef = null;
 
-// ── Firebase init ──
 firebase.initializeApp({ databaseURL: FIREBASE_URL });
 db = firebase.database();
 
@@ -667,7 +667,6 @@ function showFeedback(isCorrect, pts, rank, total) {
   document.getElementById('p-fb-rank').textContent = rank ? `Posición actual: ${rank}º de ${total}` : '';
   showView('view-player-feedback');
 }
-}); // end window.addEventListener load
 </script>
 </body>
 </html>
