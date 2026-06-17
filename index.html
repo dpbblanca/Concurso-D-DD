@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QuizLive</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 :root{--bg:#0d0d1a;--s:#1a1a2e;--s2:#16213e;--ac:#7c3aed;--ac2:#a855f7;--gr:#10b981;--re:#ef4444;--tx:#f1f5f9;--tx2:#94a3b8;--r:16px;--rs:10px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -19,16 +21,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .hidden{display:none!important}
 h2{font-size:28px;font-weight:800}
 
-/* LOBBY */
+/* LOBBY JUGADOR */
 #vl{align-items:center;justify-content:center;gap:32px;padding:40px 20px}
 .logo{font-size:56px;font-weight:900;letter-spacing:-2px}
 .logo span{color:var(--ac2)}
-.cards{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
-.card{background:var(--s);border-radius:var(--r);padding:36px 40px;width:260px;text-align:center;cursor:pointer;border:2px solid transparent;transition:border-color .2s,transform .15s}
-.card:hover{border-color:var(--ac2);transform:translateY(-4px)}
-.card-icon{font-size:48px;margin-bottom:16px}
-.card h3{font-size:20px;margin-bottom:8px}
-.card p{color:var(--tx2);font-size:14px;line-height:1.5}
 
 /* ADMIN LOBBY */
 #val{align-items:center;justify-content:center;gap:28px;padding:40px 20px;text-align:center}
@@ -62,7 +58,9 @@ h2{font-size:28px;font-weight:800}
 .oC{background:#16a34a;color:#fff}.oD{background:#d97706;color:#fff}
 .oT{background:#16a34a;color:#fff}.oF{background:#e83b3b;color:#fff}
 .oshp{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.obtn.dim{opacity:.35}.obtn.cor{outline:4px solid #fff}
+.obtn.dim{opacity:.3}
+.obtn.cor{outline:4px solid #fff;position:relative}
+.obtn.cor::after{content:'✓ CORRECTA';position:absolute;top:-10px;right:10px;background:#10b981;color:#fff;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:800}
 .rbar{display:flex;align-items:center;justify-content:space-between;background:var(--s);border-radius:var(--rs);padding:12px 20px}
 .rcnt{font-size:22px;font-weight:800}
 
@@ -123,13 +121,17 @@ h2{font-size:28px;font-weight:800}
 .pol{font-size:24px}
 .pot{font-size:13px;text-align:center;color:#fff}
 
-/* PLAYER FEEDBACK */
-#vpf{align-items:center;justify-content:center;gap:28px;text-align:center;padding:40px 20px}
-.fbic{font-size:96px}
-.fbtit{font-size:36px;font-weight:900}
-.fbpts{font-size:22px;color:var(--tx2)}
-.fbsc{font-size:18px;margin-top:4px}
-.fbrk{background:var(--s);border-radius:var(--r);padding:16px 32px;font-size:16px}
+/* PLAYER FEEDBACK — ocupa toda la pantalla */
+#vpf{align-items:center;justify-content:center;gap:20px;text-align:center;padding:32px 20px}
+.fbic{font-size:80px}
+.fbtit{font-size:34px;font-weight:900}
+.fbpts{font-size:20px;color:var(--tx2)}
+.fbsc{font-size:17px}
+.fbrk{background:var(--s);border-radius:var(--r);padding:12px 28px;font-size:15px}
+/* caja respuesta correcta en feedback jugador */
+.fb-correct-box{background:var(--s);border-radius:var(--r);padding:16px 24px;border:2px solid var(--gr);max-width:340px;width:100%}
+.fb-correct-box .fbc-lbl{font-size:12px;color:var(--gr);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.fb-correct-box .fbc-ans{font-size:18px;font-weight:700;line-height:1.4}
 
 /* PLAYER END */
 #vpe{align-items:center;justify-content:center;gap:24px;text-align:center;padding:40px 20px}
@@ -141,23 +143,23 @@ h2{font-size:28px;font-weight:800}
 </head>
 <body>
 
+<!-- JUGADOR: pantalla de inicio (solo si no es admin) -->
 <div id="vl" class="view active">
-  <div class="logo">Quiz<span>Live</span></div>
-  <p style="color:var(--tx2);font-size:18px">Elige tu rol para comenzar</p>
-  <div class="cards">
-    <div class="card" onclick="startAdmin()">
-      <div class="card-icon">🎮</div>
-      <h3>Administrador</h3>
-      <p>Controla la partida desde el proyector</p>
-    </div>
-    <div class="card" onclick="showView('vpj')">
-      <div class="card-icon">📱</div>
-      <h3>Jugador</h3>
-      <p>Únete desde tu móvil con el código PIN</p>
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+    <div style="text-align:center">
+      <div class="logo" style="margin-bottom:16px">Quiz<span>Live</span></div>
+      <p style="color:var(--tx2);font-size:18px;margin-bottom:32px">Introduce el código PIN para unirte</p>
+      <div class="jform" style="margin:0 auto">
+        <input id="ppin" type="number" placeholder="Código PIN"/>
+        <input id="pname" type="text" placeholder="Tu nombre o apodo" maxlength="20"/>
+        <button class="btn btn-p" style="width:100%" onclick="playerJoin()">Entrar 🚀</button>
+        <p id="jerr" style="color:var(--re);font-size:14px;display:none;text-align:center"></p>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- ADMIN LOBBY -->
 <div id="val" class="view">
   <div class="pinbox">
     <div class="lbl">Código PIN de la partida</div>
@@ -169,6 +171,7 @@ h2{font-size:28px;font-weight:800}
   <button class="btn btn-p btn-lg" id="btnstart" onclick="adminStartGame()" disabled>Iniciar Partida (0 jugadores)</button>
 </div>
 
+<!-- ADMIN QUESTION -->
 <div id="vaq" class="view">
   <div class="ahdr">
     <div>
@@ -196,6 +199,7 @@ h2{font-size:28px;font-weight:800}
   </div>
 </div>
 
+<!-- ADMIN RESULTS -->
 <div id="var" class="view">
   <h2>Resultados</h2>
   <div class="rbars" id="rbars"></div>
@@ -209,6 +213,7 @@ h2{font-size:28px;font-weight:800}
   </div>
 </div>
 
+<!-- ADMIN LEADERBOARD -->
 <div id="vlb" class="view">
   <h2 id="lbtit">🏆 Clasificación</h2>
   <div class="podium" id="apodium"></div>
@@ -219,24 +224,17 @@ h2{font-size:28px;font-weight:800}
   </div>
 </div>
 
-<div id="vpj" class="view">
-  <div class="jlogo">Quiz<span>Live</span></div>
-  <div class="jform">
-    <h2>Unirse a la partida</h2>
-    <input id="ppin" type="number" placeholder="Código PIN"/>
-    <input id="pname" type="text" placeholder="Tu nombre o apodo" maxlength="20"/>
-    <button class="btn btn-p" style="width:100%" onclick="playerJoin()">Entrar 🚀</button>
-    <p id="jerr" style="color:var(--re);font-size:14px;display:none;text-align:center"></p>
+<!-- PLAYER WAIT -->
+<div id="vpw" class="view">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:24px;text-align:center;padding:40px 20px">
+    <div class="wave">👋</div>
+    <div class="wname" id="pwname"></div>
+    <div class="wsub">¡Ya estás dentro! Espera a que el presentador inicie el juego.</div>
+    <div class="waiting">Esperando<div class="dots"><span></span><span></span><span></span></div></div>
   </div>
 </div>
 
-<div id="vpw" class="view">
-  <div class="wave">👋</div>
-  <div class="wname" id="pwname"></div>
-  <div class="wsub">¡Ya estás dentro! Espera a que el presentador inicie el juego.</div>
-  <div class="waiting">Esperando<div class="dots"><span></span><span></span><span></span></div></div>
-</div>
-
+<!-- PLAYER QUESTION -->
 <div id="vpq" class="view">
   <div class="phdr">
     <div class="pschip">⭐ <span id="psc">0</span> pts</div>
@@ -246,24 +244,31 @@ h2{font-size:28px;font-weight:800}
   <div class="popts" id="popts"></div>
 </div>
 
+<!-- PLAYER FEEDBACK -->
 <div id="vpf" class="view">
   <div class="fbic" id="fbic"></div>
   <div class="fbtit" id="fbtit"></div>
   <div class="fbpts" id="fbpts"></div>
+  <!-- caja con la respuesta correcta -->
+  <div class="fb-correct-box" id="fbcorbox">
+    <div class="fbc-lbl">Respuesta correcta</div>
+    <div class="fbc-ans" id="fbcorans"></div>
+  </div>
   <div class="fbsc" id="fbsc"></div>
   <div class="fbrk" id="fbrk"></div>
 </div>
 
+<!-- PLAYER END -->
 <div id="vpe" class="view">
-  <div class="etro" id="etro">🏆</div>
-  <div class="etit">¡Fin del juego!</div>
-  <div class="esc" id="esc"></div>
-  <div class="erk" id="erk"></div>
-  <p style="color:var(--tx2);font-size:15px;margin-top:8px">¡Gracias por participar!</p>
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:24px;text-align:center;padding:40px 20px">
+    <div class="etro" id="etro">🏆</div>
+    <div class="etit">¡Fin del juego!</div>
+    <div class="esc" id="esc"></div>
+    <div class="erk" id="erk"></div>
+    <p style="color:var(--tx2);font-size:15px;margin-top:8px">¡Gracias por participar!</p>
+  </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 firebase.initializeApp({ databaseURL: "https://mi-trivia-31119-default-rtdb.firebaseio.com" });
 var db = firebase.database();
@@ -298,10 +303,20 @@ var SH=['▲','◆','●','■'];
 
 var role=null, myName='', myScore=0, gamePin=null, ati=null, pti=null, gref=null, curIdx=-1, prevPhase=null;
 
+// ── Detectar si es admin por URL ──
+function isAdminURL(){
+  return window.location.search.indexOf('admin=quizmaster2025')!==-1;
+}
+
 function showView(id){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
   document.getElementById(id).classList.add('active');
 }
+
+// Al cargar: si la URL tiene ?admin=quizmaster2025 arranca como admin directamente
+window.addEventListener('DOMContentLoaded', function(){
+  if(isAdminURL()) startAdmin();
+});
 
 // ── ADMIN ──
 function startAdmin(){
@@ -413,22 +428,40 @@ function startAdminTimer(secs,idx){
 function adminShowResults(idx){
   clearInterval(ati);
   var q=QS[idx];
+
+  // Marcar respuesta correcta visualmente en la pantalla admin
+  var numOpts=q.tp==='tf'?2:q.o.length;
+  for(var i=0;i<numOpts;i++){
+    var el=document.getElementById('opt'+i);
+    if(el){
+      if(i===q.c) el.classList.add('cor');
+      else el.classList.add('dim');
+    }
+  }
+
   gref.child('answers').get().then(function(asn){
     var answers=asn.val()||{};
     gref.child('players').get().then(function(psn){
       var players=psn.val()||{};
       var upd={};
+      // 1 punto por respuesta correcta
       Object.keys(answers).forEach(function(nm){
         var ans=answers[nm];
         var ok=ans.optIndex===q.c||q.tp==='f';
-        var pts=ok?Math.round(500+(ans.tl/q.s)*500):0;
+        var pts=ok?1:0;
         var prev=(players[nm]&&players[nm].score)||0;
         upd['players/'+nm+'/score']=prev+pts;
+        upd['players/'+nm+'/lastCorrect']=ok;
+        upd['players/'+nm+'/lastAnswer']=ans.optIndex;
       });
+      // guardar la respuesta correcta en Firebase para que los jugadores la vean
+      upd['correctAnswer']=q.c;
+      upd['correctAnswerText']=q.tp==='f'?(q.ex||'Respuesta libre'):q.o[q.c];
       gref.update(upd,function(){
         gref.child('phase').set('results');
       });
 
+      // Barras
       var container=document.getElementById('rbars');
       container.innerHTML='';
       var labs=q.tp==='tf'?['Verdadero','Falso']:q.o;
@@ -456,7 +489,7 @@ function adminShowLeaderboard(){
     var med=['🥈','🥇','🥉'];
     order.forEach(function(en,si){
       if(!en)return;
-      pod.innerHTML+='<div class="pslot p'+pos[si]+'"><div class="pname">'+en[0]+'</div><div class="pscore">'+en[1].score+' pts</div><div class="pblk">'+med[si]+'</div></div>';
+      pod.innerHTML+='<div class="pslot p'+pos[si]+'"><div class="pname">'+en[0]+'</div><div class="pscore">'+en[1].score+' pt'+(en[1].score!==1?'s':'')+'</div><div class="pblk">'+med[si]+'</div></div>';
     });
     document.getElementById('alblist').innerHTML=sorted.slice(3).map(function(en,i){
       return '<div class="lbrow"><div class="lbrk">'+(i+4)+'</div><div class="lbnm">'+en[0]+'</div><div class="lbsc">'+en[1].score+' pts</div></div>';
@@ -504,6 +537,7 @@ function playerJoin(){
 
 function listenAsPlayer(){
   prevPhase=null;
+  curIdx=-1;
   gref.on('value',function(sn){
     var st=sn.val();
     if(!st)return;
@@ -520,12 +554,13 @@ function listenAsPlayer(){
       var ans=st.answers&&st.answers[myName];
       var q=QS[idx];
       var ok=ans&&(ans.optIndex===q.c||q.tp==='f');
-      var pts=ok?Math.round(500+(ans.tl/q.s)*500):0;
+      var pts=ok?1:0;
       if(ok)myScore+=pts;
+      var correctText=st.correctAnswerText||(q.tp==='f'?(q.ex||'Respuesta libre'):q.o[q.c]);
       var pl=st.players||{};
       var sorted=Object.entries(pl).sort(function(a,b){return b[1].score-a[1].score});
       var rank=sorted.findIndex(function(e){return e[0]===myName})+1;
-      showFeedback(ok,pts,rank,sorted.length);
+      showFeedback(ok,pts,correctText,rank,sorted.length);
     } else if(ph==='end'&&prevPhase!=='end'){
       prevPhase='end';
       clearInterval(pti);
@@ -534,7 +569,7 @@ function listenAsPlayer(){
       var rank=sorted.findIndex(function(e){return e[0]===myName})+1;
       var tr=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'🎉';
       document.getElementById('etro').textContent=tr;
-      document.getElementById('esc').textContent=myScore+' puntos totales';
+      document.getElementById('esc').textContent=myScore+' punto'+(myScore!==1?'s':'');
       document.getElementById('erk').textContent='Posición final: '+rank+'º de '+sorted.length;
       showView('vpe');
     }
@@ -571,32 +606,38 @@ function renderPlayerQuestion(idx){
     if(t<=0){
       clearInterval(pti);
       gref.child('answers/'+myName).set({optIndex:-1,tl:0});
-      showFeedback(false,0,null,null);
+      // esperar a que firebase envíe los resultados
     }
   },1000);
   showView('vpq');
 }
 
-function playerAnswer(optIdx,totalSecs){
+function playerAnswer(optIdx){
   clearInterval(pti);
   var tl=parseInt(document.getElementById('ptim').textContent)||0;
   gref.child('answers/'+myName).set({optIndex:optIdx,tl:tl});
   document.querySelectorAll('.popt').forEach(function(b){b.disabled=true;b.style.opacity='0.4'});
   var sel=document.getElementById('po'+optIdx);
   if(sel){sel.style.opacity='1';sel.style.outline='3px solid #fff';}
+  // mostrar pantalla de espera
   document.getElementById('fbic').textContent='⏳';
   document.getElementById('fbtit').textContent='¡Respuesta enviada!';
-  document.getElementById('fbpts').textContent='Esperando al presentador...';
+  document.getElementById('fbpts').textContent='Esperando resultado...';
+  document.getElementById('fbcorbox').style.display='none';
   document.getElementById('fbsc').textContent='';
   document.getElementById('fbrk').textContent='';
   showView('vpf');
 }
 
-function showFeedback(ok,pts,rank,total){
+function showFeedback(ok,pts,correctText,rank,total){
   document.getElementById('fbic').textContent=ok?'✅':'❌';
   document.getElementById('fbtit').textContent=ok?'¡Correcto!':'¡Incorrecto!';
-  document.getElementById('fbpts').textContent=ok?'+'+pts+' puntos':'0 puntos';
-  document.getElementById('fbsc').textContent='Total: '+myScore+' pts';
+  document.getElementById('fbpts').textContent=ok?'+1 punto':'0 puntos';
+  // mostrar siempre la respuesta correcta
+  var cbox=document.getElementById('fbcorbox');
+  cbox.style.display='block';
+  document.getElementById('fbcorans').textContent=correctText;
+  document.getElementById('fbsc').textContent='Total: '+myScore+' punto'+(myScore!==1?'s':'');
   document.getElementById('fbrk').textContent=rank?'Posición actual: '+rank+'º de '+total:'';
   showView('vpf');
 }
