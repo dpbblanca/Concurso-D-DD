@@ -1,0 +1,1 @@
+?admin=quizmaster2025
